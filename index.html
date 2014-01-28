@@ -39,18 +39,41 @@
           <h1>
 <a name="quants" class="anchor" href="#quants"><span class="octicon octicon-link"></span></a>QuANTs</h1>
 
-<p>The purpose of QuANTs is to provide quality assurance and assessment for <a href="https://github.com/stnava/ANTs">Advanced Normalization Tools (ANTs)</a>. Specifically, routines will be provided to evaluate the output of scripts inlcluded with ANTs such as antsCorticalThickness and antsNeuroimagingBattery. A two-layer approach will be taken:</p>
+<p>The purpose of QuANTs is to provide quality assurance and assessment for <a href="https://github.com/stnava/ANTs">Advanced Normalization Tools (ANTs)</a>. Specifically, routines will be provided to evaluate the output of scripts inlcluded with ANTs such as antsCorticalThickness and antsNeuroimagingBattery. A layered approach will be taken:</p>
 
 <ul>
 <li>Cluster based generatation of csv files and images for individual data sets</li>
 <li>Generation of summary csv files, graph and images for large sets of data (studies, etc)</li>
-</ul>
+</ul><p>In addition, by providing an example of how to use these routines, we inherently provide an example of how to use ANTs for an "off the shelf" analysis.</p>
+
+<h2>
+<a name="the-layers" class="anchor" href="#the-layers"><span class="octicon octicon-link"></span></a>The Layers</h2>
+
+<p>We generally have 3 forms of the data that we are interested in examining:</p>
+
+<ul>
+<li>Raw input (e.g. dicom)</li>
+<li>Minimally preprocessed input (e.g. nifti)</li>
+<li>Processed (e.g. masked, registered, segmented)</li>
+</ul><h3>
+<a name="raw" class="anchor" href="#raw"><span class="octicon octicon-link"></span></a>Raw</h3>
+
+<p>In most cases, you want to receive the data in dicom format as this removes an problems that may result from unknown or inconsistent methods for converting from dicom to nifti. In some cases, such as many publicly available data sets, this conversion has already occured in order to provide a more convenient data set to the research community. From the dicom data we want to gather the following information to guide the rest of the study</p>
+
+<ul>
+<li>Number of unique acquisitions</li>
+<li>Number of unique subjects</li>
+<li>Number and timing of acquisitions per subject</li>
+<li>Image types (e.g. MR sequences) for each acquisition</li>
+<li>Repeat images within an acquisition (intentional or due to bad data?)</li>
+<li>Subject demographic info that can be pulled from the header</li>
+</ul><p>Conversion to anonymized data</p>
         </article>
       </div>
     </div>
     <footer>
       <div class="owner">
-      <p><a href="https://github.com/jeffduda" class="avatar"><img src="https://1.gravatar.com/avatar/c0d366e099f2741369476e466015d48d?d=https%3A%2F%2Fidenticons.github.com%2Fc1920cb78a6c892ed31e0273ea09dc26.png&amp;r=x&amp;s=60" width="48" height="48"/></a> <a href="https://github.com/jeffduda">jeffduda</a> maintains <a href="https://github.com/jeffduda/QuANTs">QuANTs</a></p>
+      <p><a href="https://github.com/jeffduda" class="avatar"><img src="https://2.gravatar.com/avatar/c0d366e099f2741369476e466015d48d?d=https%3A%2F%2Fidenticons.github.com%2Fc1920cb78a6c892ed31e0273ea09dc26.png&amp;r=x&amp;s=60" width="48" height="48"/></a> <a href="https://github.com/jeffduda">jeffduda</a> maintains <a href="https://github.com/jeffduda/QuANTs">QuANTs</a></p>
 
 
       </div>

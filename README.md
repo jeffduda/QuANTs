@@ -16,7 +16,7 @@ We generally have 3 forms of the data that we are interested in examining:
 * Processed (e.g. masked, registered, segmented)
 
 ### Raw 
-In most cases, you want to receive the data in dicom format as this removes and problems that may results from unknown or inconsistent methods for converting from dicom to nifti. In some cases, such as many publicly available data sets, this conversion has already occured in order to provide a more convenient data set to the research community. From the dicom data we want to gather the following information to guide the rest of the study
+In most cases, you want to receive the data in dicom format as this removes an problems that may result from unknown or inconsistent methods for converting from dicom to nifti. In some cases, such as many publicly available data sets, this conversion has already occured in order to provide a more convenient data set to the research community. From the dicom data we want to gather the following information to guide the rest of the study
 
 * Number of unique acquisitions
 * Number of unique subjects

@@ -27,3 +27,8 @@ In most cases, you want to receive the data in dicom format as this removes an p
 
 Conversion to anonymized data
 
+### Preprocessed
+
+
+### Processed
+

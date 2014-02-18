@@ -1,6 +1,19 @@
 import os
 import gdcm
 
+
+
+class DicomFileInfo(object):
+  """Info related to dicom image files."""
+
+  def __init__(self, filename):
+    """Initializer."""
+    self.filename = filename
+
+  def printargs(self):
+    """Print Self."""
+    print self.filename
+
 def get_filepaths(directory):
   """This function will generate the file names in a directory 
   tree by walking the tree either top-down or bottom-up. For each 

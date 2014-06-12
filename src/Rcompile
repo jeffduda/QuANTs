@@ -1,0 +1,9 @@
+#!/usr/bin/env Rscript
+library(knitr)
+knit('QuANTs.Rnw',tangle=TRUE)
+knit('QuANTs.Rnw',tangle=FALSE)
+for ( i in c(1,2,3) ) {
+    system('pdflatex QuANTs ')
+    system('bibtex QuANTs ')
+}
+system('rm *log *aux *blg  *out *spl')

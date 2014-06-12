@@ -1,0 +1,378 @@
+\documentclass[11pt]{article}
+
+% amsmath package, useful for mathematical formulas
+\usepackage{floatrow}
+\newfloatcommand{capbtabbox}{table}[][\FBwidth]
+\usepackage{blindtext}
+\usepackage{amsmath,verbatim}
+% amssymb package, useful for mathematical symbols
+\usepackage{amssymb,array}
+\usepackage[colorlinks=true]{hyperref}
+\definecolor{Dgray}{gray}{0.3}
+\definecolor{Lgray}{gray}{0.75}
+\definecolor{purp}{rgb}{0.5,0.,1}
+\hypersetup{urlcolor=purp}
+ \usepackage{wrapfig}
+\usepackage{times,colortbl,ctable}
+\usepackage{listings}
+
+% graphicx package, useful for including eps and pdf graphics
+% include graphics with the command \includegraphics
+\usepackage{graphicx}
+
+% cite package, to clean up citations in the main text. Do not remove.
+\usepackage{cite}
+
+\usepackage{color} 
+
+% Use doublespacing - comment out for single spacing
+%\usepackage{setspace} 
+%\doublespacing
+
+
+% Text layout
+\topmargin 0.0cm
+\oddsidemargin 0.5cm
+\evensidemargin 0.5cm
+\textwidth 16cm 
+\textheight 21cm
+
+% Bold the 'Figure #' in the caption and separate it with a period
+% Captions will be left justified
+\usepackage[labelfont=bf,labelsep=period,justification=raggedright]{caption}
+
+% Remove brackets from numbering in List of References
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad#1.}
+\makeatother
+\newcommand{\vb}{\beta}
+\newcommand{\X}{{\bf X}}
+\newcommand{\x}{{\bf x}}
+\newcommand{\p}{{\bf p}}
+\newcommand{\rr}{{\bf r}}
+\newcommand{\I}{\image{I}}
+\newcommand{\U}{{\bf U}}
+\newcommand{\V}{{\bf V}}
+\newcommand{\vv}{{\bf v}}
+\newcommand{\h}{{\bf H}}
+
+
+% Leave date blank
+\date{}
+
+\pagestyle{myheadings}
+%% ** EDIT HERE **
+
+
+%% ** EDIT HERE **
+%% PLEASE INCLUDE ALL MACROS BELOW
+
+%% END MACROS SECTION
+
+\begin{document}
+<<definePop,include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
+basedir<-"/Users/stnava/data/JJ/Longitudinal/pededata/dynantstest/"
+subjects<-c("subject_0_long","subject_1_long","subject_2_long","subject_3_long")
+basedir<-"/Users/stnava/data/DynANTs/dynantstest/"
+subjects<-c("subject_0_long","subject_1_long")
+source("/Users/stnava/code/QuANTs/Scripts/ANTS/summarizeAntsProcessing.R")
+testsub<-summarizeAntsProcessing(directory=paste(basedir,subjects[1],sep=''),
+                                 prefix=subjects[1] ) # ,verbose=T, grayLabelID="_Label.nii.gz")
+@ 
+
+
+
+<<setup, include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
+library(png)
+options(xtable.comment = FALSE)
+options(replace.assign=TRUE,width=60)
+options( digits = 4 )
+# define some valuable summarizing functions .... 
+meanByLabel <- function( img, labelImg, labels ) {
+  means <- rep(NA,length(labels))
+  for (lab in c(1:length(labels))) {
+    means[lab] <- mean(img, mask=(labelImg==labels[lab]))
+  }
+  return(means)
+}
+
+labelVolumes <- function( labelImg, labels ) {
+  vol <- rep(NA,length(labels))
+  voxVol <- prod(antsGetSpacing(labelImg))
+  for ( lab in c(1:length(labels))) {
+    vol[lab] <- voxVol * length( which(as.array(labelImg)==labels[lab]) )
+  }
+  return(vol)
+}
+
+
+summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, grayLabelNames=NA, whiteLabelID=NA, whiteLabelNames=NA, DTI=NA, PASL=NA, PCASL=NA, BOLD=NA, MT=NA, verbose=FALSE )
+{
+
+  require(ANTsR)
+  basicACTsummary<-data.frame( BrainVolume=0, CSFVolume=0,  GMVolume=0,  WMVolume=0, DeepGrayVolume=0, BrainStemVolume=0, CerebellumVolume=0, MeanThickness=0 )
+#directory <- paste(sep='',directory,"/")
+
+# Check for required files
+
+# Brain Extraction Mask
+  brainMaskName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"BrainExtractionMask.nii.gz")), full.names=TRUE)
+  if ( length(brainMaskName) == 0 ) {
+    warning( paste("No brainmask file found in", directory) )
+    return( "No_Brain_Mask_Found" )
+  } else if (verbose) print(brainMaskName)
+
+# Brain Segmentation
+  brainSegName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"BrainSegmentation.nii.gz")), full.names=TRUE)
+  if ( length(brainSegName) == 0 ) {
+    warning( paste("No brain segmentation file found in", directory) )
+    return( "No_Brain_segmentation_Found" )
+  } else if (verbose) print(brainSegName)
+
+# Thickness
+  thicknessName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"CorticalThickness.nii.gz")), full.names=TRUE)
+  if ( length(thicknessName) == 0 ) {
+      warning( paste("No thickness file found in", directory) )
+      return( "No_Thickness_Found" )
+  }
+
+
+  brainMask <- antsImageRead(brainMaskName[1],dim)
+  voxVol <- prod(antsGetSpacing(brainMask))
+  brainvol <- voxVol * length(which(as.array(brainMask)>0))
+  if ( verbose ) {
+      print( paste("Cerebrum volume =", brainvol ) )
+  }
+  
+  brainSeg <- antsImageRead(brainSegName[1],dim)
+  tissueVols <- labelVolumes(brainSeg, c(1:6) )
+  
+  csfVol <- tissueVols[1]
+  gmVol <- tissueVols[2]
+  wmVol <- tissueVols[3]
+  deepVol <-tissueVols[4]
+  stemVol <- tissueVols[5]
+  cerbVol <- tissueVols[6]
+  
+  if ( verbose ) {
+      print( paste("CSF volume =", csfVol))
+      print( paste("GM volume =", gmVol))
+      print( paste("WM volume =", wmVol))
+      print( paste("DeepGray volume =", deepVol))
+      print( paste("BrainStem volume = ", stemVol))
+      print( paste("Cerebellum volume = ", cerbVol))
+  }
+  
+  thickness <- antsImageRead(thicknessName,dim)
+  voxVol <- prod(antsGetSpacing(thickness))
+  thickMean <- mean(thickness, mask=(brainSeg==2))
+  if (verbose) {
+      print( paste("GM mean thickness", thickMean))
+  }
+  
+  basicACTsummary$BrainVolume<-brainvol
+  basicACTsummary$CSFVolume<-csfVol
+  basicACTsummary$GMVolume<-gmVol
+  basicACTsummary$WMVolume<-wmVol
+  basicACTsummary$DeepGrayVolume<-deepVol
+  basicACTsummary$BrainStemVolume<-stemVol
+  basicACTsummary$CerebellumVolume<-cerbVol
+  basicACTsummary$MeanThickness<-thickMean
+  
+  thickMeanRegions <- NA
+  gVolumeRegions <- NA
+  gLabels <- NA
+  gLabelList <- NA
+
+  corticalLabelSummary<-NA
+  if ( !is.na(grayLabelID) ) {
+      grayLabels <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,grayLabelID)), full.names=TRUE)
+      
+      if ( length(grayLabels) > 0 ) {
+          gLabels <- antsImageRead(grayLabels,dim)
+          gLabels[ brainSeg != 2 ]<-0 
+          gLabelList <- sort(unique(as.vector(as.array(gLabels))))
+          gLabelList <- gLabelList[ gLabelList != 0 ]
+          gLabelNames <- gLabelList
+          
+          if ( !is.na(grayLabelNames) ) {
+              grayNames <- read.csv(grayLabelNames)
+              grayLabelList <- grayNames[,1]
+              grayLabelNames <- grayNames[,2]
+              grayThickNames<-paste("MeanCorticalThickness",grayLabelNames,sep='')
+          } else {
+              grayLabelNames<-paste("CorticalVolume",c(1:length(gLabelList)),sep='')
+              grayThickNames<-paste("MeanCorticalThickness",c(1:length(gLabelList)),sep='')
+          }
+    
+    # Mean value per label
+          thickMeanRegions <- meanByLabel(thickness, gLabels, gLabelList)
+      }
+
+      gVolumeRegions <- labelVolumes(gLabels, gLabelList)
+      
+      if ( verbose ) {
+          print( "Gray ROI Volumes" )
+          print(gVolumeRegions)
+          print( "Thickness ROI Values" )
+          print( thickMeanRegions )
+      }
+      corticalLabelSummary<-data.frame( c(thickMeanRegions  , gVolumeRegions ) )
+      concatnames<-c(grayThickNames,grayLabelNames)
+      rownames(corticalLabelSummary)<-concatnames 
+  }
+  
+
+# White matter labels
+  wLabels <- NA
+  wLabelList <- NA
+  wVolumeRegions <- NA
+  if ( !is.na(whiteLabelID) ) {
+      whiteLabels <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,whiteLabelID)), full.names=TRUE)
+      if ( length(whiteLabels) > 0 ) {
+          wLabels <- antsImageRead(whiteLabels,dim)
+          wLabelList <- sort(unique(as.vector(as.array(wLabels))))
+          wLabelList <- wLabelList[ wLabelList != 0 ]
+          wLabelNames <- wLabelList
+          
+          if ( !is.na(whiteLabelNames) ) {
+              WhiteNames <- read.csv(whiteLabelNames)
+              whiteLabelList <- whiteNames[,1]
+              whiteLabelNames <- whiteNames[,2]
+          }
+      }
+      wVolumeRegions <- labelVolumes(wLabels, wLabelList)
+  }
+
+# Examine DTI data
+  if ( !is.na(DTI) ) {
+
+      dtdir <- paste(sep='',directory,"DTI/")
+      faName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"Anatomical_FA.nii.gz")), full.names=TRUE)
+      mdName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"Anatomical_MD.nii.gz")), full.names=TRUE)
+      rdName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"Anatomical_RD.nii.gz")), full.names=TRUE)
+
+      if ( length(faName) > 0 ) {
+          fa <- antsImageRead(faName[1], dim)
+          meanFA <- mean(fa, mask=(brainSeg==3))
+          if ( verbose ) {
+              print( paste("Mean FA in white matter", meanFA))
+          }
+
+      }
+      
+      if ( length(rdName) > 0 ) {
+          rd <- antsImageRead(rdName[1], dim)
+          meanRD <- mean(rd, mask=(brainSeg==3))
+          
+          if ( verbose ) {
+              print( paste("Mean RD in white matter", meanRD))
+          }
+
+      }
+
+      if ( length(mdName) > 0 ) {
+          md <- antsImageRead(mdName[1], dim)
+          meanMDW <- mean(md, mask=(brainSeg==3))
+          meanMDG <- mean(md, mask=(brainSeg==2))
+          
+          if ( verbose ) {
+              print( paste("Mean MD in white matter", meanMDW))
+              print( paste("Mean MD in gray matter", meanMDG))
+          }
+          
+          if ( !is.na(gLabels) ) {
+              mdGrayRegions <- meanByLabel(md, gLabels, gLabelList)
+          }
+
+      }
+
+  }
+
+# Examine BOLD data
+# cat("should see:  http://www.ancienteco.com/2012/05/quickly-visualize-your-whole-dataset.html \n")
+
+  return( list( basicACTsummary=basicACTsummary, corticalLabelSummary=t(corticalLabelSummary ) ))
+}
+
+@
+
+% Title must be 150 characters or less
+\begin{flushleft}
+{\Large
+\textbf{QuANTs: ANTs Quality Assurance for directory \Sexpr{basedir}}
+}
+% Insert Author names, affiliations and corresponding author email.
+\\
+Brian B. Avants$^{1}$, Jeffrey T. Duda$^{1}$,Philip A. Cook$^{1}$
+\\
+\bf{1} Dept of Radiology, University of Pennsylvania,
+Philadelphia, PA, USA
+\\
+$\ast$ E-mail: B. Avants, stnava@gmail.com
+\end{flushleft}
+% Please keep the abstract less than 170 words
+\section*{Abstract}
+We use ANTs\textit{R} to summarize ANTs cortical thickness results \cite{Tustison2014} for
+individual subjects and at the population level.  If appropriate input
+exists, we also summarize other modalities such as DTI, ASL and BOLD.
+These summary measurements are intended for quality assurance purposes
+and are subject to change as the project evolves.  This document and all figures are generated on the fly
+by compiling the input file via the \textit{R} and \textit{LaTeX}
+interpreters using the \textit{knitr} package.  This produces the output pdf along with all statistical
+figures and quantitative demographic summaries.
+
+
+<<demog, include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
+library(ggplot2)
+library(xtable)
+library(randomForest)
+library(ANTsR)
+library(visreg)
+library(psych)
+library(pheatmap)
+library(e1071)
+# myd3<-regressionNetworkViz( mylm , sigthresh=0.05, whichviz="Force", outfile="figure/results.html", logvals=T, correlateMyOutcomes = NA, corthresh = 0.85, zoom = T , mygroup=mygroups )
+@
+
+
+<<getSubjectStats,show=FALSE,include=TRUE, cache=FALSE,eval=TRUE,echo=TRUE,warning=FALSE,tidy=TRUE>>=
+populationdf<-NA
+ct<-1
+for ( subject in subjects ) 
+    {
+    subsummary<-summarizeAntsProcessing(
+        directory=paste(basedir,subject,sep=''),
+        prefix=subject ) 
+    # ,verbose=T, grayLabelID="_Label.nii.gz")
+    if ( ct == 1 ) {
+        populationdf<-subsummary[[1]] 
+    } else {
+        populationdf<-rbind( populationdf, subsummary[[1]] )
+    }
+    # find pngs and display them 
+    pngseg<-Sys.glob(paste(basedir,subject,
+      "*BrainSegmentationTiledMosaic.png",sep='/'))
+    pngseg<-readPNG(pngseg)
+    print(paste(subject,"Segmentation"))
+    plot.new(); rasterImage(pngseg, 0, 0, 1, 1)
+    pngthk<-Sys.glob(paste(basedir,subject,
+      "*CorticalThicknessTiledMosaic.png",sep='/'))
+    pngthk<-readPNG(pngthk)
+    print(paste(subject,"Thickness"))
+    plot.new(); rasterImage(pngthk, 0, 0, 1, 1)
+    ct<-ct+1
+    }
+print( dim( populationdf ) )
+summary( populationdf )
+pheatmap( cor( populationdf ) )
+#
+@ 
+
+\bibliographystyle{plain}
+\bibliography{QuANTs}
+
+\section*{Acknowledgements}
+R01-MH080892.  The NLM for support of the Insight ToolKit.
+
+\end{document}

@@ -313,14 +313,17 @@ $\ast$ E-mail: B. Avants, stnava@gmail.com
 \end{flushleft}
 % Please keep the abstract less than 170 words
 \section*{Abstract}
-We use ANTs\textit{R} to summarize ANTs cortical thickness results \cite{Tustison2014} for
+We use ANTs\textit{R} \cite{Avants2014a}
+\href{https://github.com/stnava/ANTsR}{https://github.com/stnava/ANTsR}
+to summarize ANTs cortical thickness results \cite{Tustison2014} \href{http://stnava.github.io/ANTs/}{http://stnava.github.io/ANTs/} for
 individual subjects and at the population level.  If appropriate input
 exists, we also summarize other modalities such as DTI, ASL and BOLD.
 These summary measurements are intended for quality assurance purposes
 and are subject to change as the project evolves.  This document and all figures are generated on the fly
 by compiling the input file via the \textit{R} and \textit{LaTeX}
 interpreters using the \textit{knitr} package.  This produces the output pdf along with all statistical
-figures and quantitative demographic summaries.
+figures and quantitative demographic summaries.  Several aspects of
+\textit{R} \href{http://cran.r-project.org/}{http://cran.r-project.org/} are also employed here.
 
 
 <<demog, include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
@@ -331,12 +334,22 @@ library(ANTsR)
 library(visreg)
 library(psych)
 library(pheatmap)
+library(plotrix)
 library(e1071)
 # myd3<-regressionNetworkViz( mylm , sigthresh=0.05, whichviz="Force", outfile="figure/results.html", logvals=T, correlateMyOutcomes = NA, corthresh = 0.85, zoom = T , mygroup=mygroups )
 @
 
+\section{Subject Level Summaries}
+Summarize individual subjects.  Here, just ants cortical thickness but
+similar measurements for other modalities will be generated.  The
+gross summary plots show the log of the normalized volume for each of
+the summary measurements.  Normalized volumes are the raw volumes
+divided by the expected value.   So a normalized brain volume for an
+individual will be 1.1 if their brain is 10\% larger than expected.
+The log of this value is 0.095 and this value is what's plotted on the
+bar graph.
 
-<<getSubjectStats,show=FALSE,include=TRUE, cache=FALSE,eval=TRUE,echo=TRUE,warning=FALSE,tidy=TRUE>>=
+<<getSubjectSpecificStats,include=TRUE, cache=FALSE,eval=TRUE,echo=FALSE,warning=FALSE,tidy=TRUE>>=
 populationdf<-NA
 ct<-1
 for ( subject in subjects ) 
@@ -350,22 +363,40 @@ for ( subject in subjects )
     } else {
         populationdf<-rbind( populationdf, subsummary[[1]] )
     }
+    # these values are expected brain volumes, 6 tissue volumes and cortical thickness 
+    normalizeplots<-c( 1.6e6, 3.5e5, 6.0e5, 4.4e5, 4.3e4, 2.4e4, 1.4e5, 2.5 )
+    barcolor<-rainbow( ncol( populationdf ) )
+    plotval<-log( as.numeric(  populationdf[ct,] / normalizeplots ) )
+    ylim<-0.3
+    barp( plotval , col=barcolor ,staxx=TRUE,staxy=TRUE, main=paste(subject,": Gross T1 Summary"), names.arg=colnames(populationdf), ylim=c( ylim*(-1.0) , ylim ), cylindrical=TRUE, shadow=TRUE)
+#    barplot( plotval , col=barcolor, names.arg=colnames(populationdf), ylim=c( ylim*(-1.0) , ylim ), las=2, cex.names=0.75 )
     # find pngs and display them 
-    pngseg<-Sys.glob(paste(basedir,subject,
+    pngsegfn<-Sys.glob(paste(basedir,subject,
       "*BrainSegmentationTiledMosaic.png",sep='/'))
-    pngseg<-readPNG(pngseg)
-    print(paste(subject,"Segmentation"))
+    pngseg<-readPNG(pngsegfn)
+    print(paste(subject,"Seg Mosaic"))
     plot.new(); rasterImage(pngseg, 0, 0, 1, 1)
-    pngthk<-Sys.glob(paste(basedir,subject,
+    pngthkfn<-Sys.glob(paste(basedir,subject,
       "*CorticalThicknessTiledMosaic.png",sep='/'))
-    pngthk<-readPNG(pngthk)
-    print(paste(subject,"Thickness"))
+    pngthk<-readPNG(pngthkfn)
+    print(paste(subject,"Thickness Mosaic"))
     plot.new(); rasterImage(pngthk, 0, 0, 1, 1)
     ct<-ct+1
     }
-print( dim( populationdf ) )
+#
+@ 
+
+\section{Group Level Summaries}
+Summarize the full population of subjects.  Here, just ants cortical thickness but
+similar measurements for other modalities will be generated.
+
+<<getPopulationStats,include=TRUE, cache=FALSE,eval=TRUE,echo=FALSE,warning=FALSE,tidy=TRUE>>=
+rownames( populationdf )<-subjects
 summary( populationdf )
 pheatmap( cor( populationdf ) )
+populationdf2<-data.matrix( populationdf )
+for ( i in 1:nrow(populationdf2) ) populationdf2[i,]<-populationdf2[i,]/normalizeplots
+stars( populationdf2 , len = 0.8,main = "Full Population Summary", ncol=10, draw.segments = T,  scale=F )
 #
 @ 
 

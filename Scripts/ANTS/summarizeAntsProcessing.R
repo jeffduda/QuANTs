@@ -29,18 +29,21 @@ summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, g
   brainMaskName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"BrainExtractionMask.nii.gz")), full.names=TRUE)
   if ( length(brainMaskName) == 0 ) {
     warning( paste("No brainmask file found in", directory) )
+    return( "No_Brain_Mask_Found" )
   } else if (verbose) print(brainMaskName)
 
 # Brain Segmentation
   brainSegName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"BrainSegmentation.nii.gz")), full.names=TRUE)
   if ( length(brainSegName) == 0 ) {
     warning( paste("No brain segmentation file found in", directory) )
+    return( "No_Brain_segmentation_Found" )
   } else if (verbose) print(brainSegName)
 
 # Thickness
   thicknessName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"CorticalThickness.nii.gz")), full.names=TRUE)
   if ( length(thicknessName) == 0 ) {
       warning( paste("No thickness file found in", directory) )
+      return( "No_Thickness_Found" )
   }
 
 

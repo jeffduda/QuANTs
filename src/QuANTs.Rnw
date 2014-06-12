@@ -397,6 +397,7 @@ pheatmap( cor( populationdf ) )
 populationdf2<-data.matrix( populationdf )
 for ( i in 1:nrow(populationdf2) ) populationdf2[i,]<-populationdf2[i,]/normalizeplots
 stars( populationdf2 , len = 0.8,main = "Full Population Summary", ncol=10, draw.segments = T,  scale=F )
+write.csv(populationdf,paste("QuANTs",gsub("/","_",basedir),"summary.csv",sep='')
 #
 @ 
 

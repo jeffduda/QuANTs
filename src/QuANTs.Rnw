@@ -1,5 +1,4 @@
 \documentclass[11pt]{article}
-
 % amsmath package, useful for mathematical formulas
 \usepackage{floatrow}
 \newfloatcommand{capbtabbox}{table}[][\FBwidth]
@@ -70,23 +69,8 @@
 %% END MACROS SECTION
 
 \begin{document}
-<<definePop,include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
-basedir<-"/Users/stnava/data/JJ/Longitudinal/pededata/dynantstest/"
-subjects<-c("subject_0_long","subject_1_long","subject_2_long","subject_3_long")
-basedir<-"/Users/stnava/data/DynANTs/dynantstest/"
-subjects<-c("subject_0_long","subject_1_long")
-source("/Users/stnava/code/QuANTs/Scripts/ANTS/summarizeAntsProcessing.R")
-testsub<-summarizeAntsProcessing(directory=paste(basedir,subjects[1],sep=''),
-                                 prefix=subjects[1] ) # ,verbose=T, grayLabelID="_Label.nii.gz")
-@ 
 
-
-
-<<setup, include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
-library(png)
-options(xtable.comment = FALSE)
-options(replace.assign=TRUE,width=60)
-options( digits = 4 )
+<<summaryfunction, include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
 # define some valuable summarizing functions .... 
 meanByLabel <- function( img, labelImg, labels ) {
   means <- rep(NA,length(labels))
@@ -105,7 +89,6 @@ labelVolumes <- function( labelImg, labels ) {
   return(vol)
 }
 
-
 summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, grayLabelNames=NA, whiteLabelID=NA, whiteLabelNames=NA, DTI=NA, PASL=NA, PCASL=NA, BOLD=NA, MT=NA, verbose=FALSE )
 {
 
@@ -116,21 +99,21 @@ summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, g
 # Check for required files
 
 # Brain Extraction Mask
-  brainMaskName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"BrainExtractionMask.nii.gz")), full.names=TRUE)
+  brainMaskName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"*BrainExtractionMask.nii.gz")), full.names=TRUE, recursive=TRUE )
   if ( length(brainMaskName) == 0 ) {
     warning( paste("No brainmask file found in", directory) )
     return( "No_Brain_Mask_Found" )
   } else if (verbose) print(brainMaskName)
 
 # Brain Segmentation
-  brainSegName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"BrainSegmentation.nii.gz")), full.names=TRUE)
+  brainSegName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"*BrainSegmentation.nii.gz")), full.names=TRUE, recursive=TRUE )
   if ( length(brainSegName) == 0 ) {
     warning( paste("No brain segmentation file found in", directory) )
     return( "No_Brain_segmentation_Found" )
   } else if (verbose) print(brainSegName)
 
 # Thickness
-  thicknessName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"CorticalThickness.nii.gz")), full.names=TRUE)
+  thicknessName <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"*CorticalThickness.nii.gz")), full.names=TRUE, recursive=TRUE )
   if ( length(thicknessName) == 0 ) {
       warning( paste("No thickness file found in", directory) )
       return( "No_Thickness_Found" )
@@ -186,7 +169,7 @@ summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, g
 
   corticalLabelSummary<-NA
   if ( !is.na(grayLabelID) ) {
-      grayLabels <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,grayLabelID)), full.names=TRUE)
+      grayLabels <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"*",grayLabelID)), full.names=TRUE, recursive=TRUE )
       
       if ( length(grayLabels) > 0 ) {
           gLabels <- antsImageRead(grayLabels,dim)
@@ -228,7 +211,7 @@ summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, g
   wLabelList <- NA
   wVolumeRegions <- NA
   if ( !is.na(whiteLabelID) ) {
-      whiteLabels <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,whiteLabelID)), full.names=TRUE)
+      whiteLabels <- list.files(path=directory, pattern=glob2rx(paste(sep='',prefix,"*",whiteLabelID)), full.names=TRUE, recursive=TRUE )
       if ( length(whiteLabels) > 0 ) {
           wLabels <- antsImageRead(whiteLabels,dim)
           wLabelList <- sort(unique(as.vector(as.array(wLabels))))
@@ -248,9 +231,9 @@ summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, g
   if ( !is.na(DTI) ) {
 
       dtdir <- paste(sep='',directory,"DTI/")
-      faName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"Anatomical_FA.nii.gz")), full.names=TRUE)
-      mdName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"Anatomical_MD.nii.gz")), full.names=TRUE)
-      rdName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"Anatomical_RD.nii.gz")), full.names=TRUE)
+      faName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"*Anatomical_FA.nii.gz")), full.names=TRUE, recursive=TRUE )
+      mdName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"*Anatomical_MD.nii.gz")), full.names=TRUE, recursive=TRUE )
+      rdName <- list.files(path=dtdir, pattern=glob2rx(paste(sep='',prefix,"*Anatomical_RD.nii.gz")), full.names=TRUE, recursive=TRUE )
 
       if ( length(faName) > 0 ) {
           fa <- antsImageRead(faName[1], dim)
@@ -294,7 +277,30 @@ summarizeAntsProcessing <- function( directory, prefix, dim=3, grayLabelID=NA, g
 
   return( list( basicACTsummary=basicACTsummary, corticalLabelSummary=t(corticalLabelSummary ) ))
 }
+#
+#
+#
+#
+@
 
+<<definePop,include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
+basedir<-"/Users/stnava/data/JJ/Longitudinal/pededata/dynantstest/"
+subjects<-c("subject_0_long","subject_1_long","subject_2_long","subject_3_long")
+basedir<-"/Users/stnava/data/DynANTs/dynantsdebug/"
+subjects<-c("118678_20140127","118678_20140415")
+testsub<-summarizeAntsProcessing(directory=basedir,
+                                 prefix=subjects[1] ) # ,verbose=T, grayLabelID="_Label.nii.gz")
+@ 
+
+
+
+<<setup, include=FALSE, cache=FALSE,eval=TRUE,warning=FALSE,tidy=TRUE>>=
+library(png)
+options(xtable.comment = FALSE)
+options(replace.assign=TRUE,width=60)
+options( digits = 4 )
+#
+#
 @
 
 % Title must be 150 characters or less
@@ -355,8 +361,7 @@ ct<-1
 for ( subject in subjects ) 
     {
     subsummary<-summarizeAntsProcessing(
-        directory=paste(basedir,subject,sep=''),
-        prefix=subject ) 
+        directory=basedir, prefix=subject ) 
     # ,verbose=T, grayLabelID="_Label.nii.gz")
     if ( ct == 1 ) {
         populationdf<-subsummary[[1]] 
@@ -371,16 +376,18 @@ for ( subject in subjects )
     barp( plotval , col=barcolor ,staxx=TRUE,staxy=TRUE, main=paste(subject,": Gross T1 Summary"), names.arg=colnames(populationdf), ylim=c( ylim*(-1.0) , ylim ), cylindrical=TRUE, shadow=TRUE)
 #    barplot( plotval , col=barcolor, names.arg=colnames(populationdf), ylim=c( ylim*(-1.0) , ylim ), las=2, cex.names=0.75 )
     # find pngs and display them 
-    pngsegfn<-Sys.glob(paste(basedir,subject,
-      "*BrainSegmentationTiledMosaic.png",sep='/'))
+    pngsegfn <- list.files(path=basedir, pattern=glob2rx(paste(sep='',subject,"*BrainSegmentationTiledMosaic.png")), full.names=TRUE, recursive=TRUE )
+    if ( file.exists( pngsegfn ) ) {
     pngseg<-readPNG(pngsegfn)
     print(paste(subject,"Seg Mosaic"))
     plot.new(); rasterImage(pngseg, 0, 0, 1, 1)
-    pngthkfn<-Sys.glob(paste(basedir,subject,
-      "*CorticalThicknessTiledMosaic.png",sep='/'))
+    }
+    pngthkfn <- list.files(path=basedir, pattern=glob2rx(paste(sep='',subject,"*CorticalThicknessTiledMosaic.png")), full.names=TRUE, recursive=TRUE )
+    if ( file.exists( pngthkfn ) ) {
     pngthk<-readPNG(pngthkfn)
     print(paste(subject,"Thickness Mosaic"))
     plot.new(); rasterImage(pngthk, 0, 0, 1, 1)
+    }
     ct<-ct+1
     }
 #

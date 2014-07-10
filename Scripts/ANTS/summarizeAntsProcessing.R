@@ -1,7 +1,9 @@
 meanByLabel <- function( img, labelImg, labels ) {
   means <- rep(NA,length(labels))
   for (lab in c(1:length(labels))) {
-    means[lab] <- mean(img, mask=(labelImg==labels[lab]))
+     
+    #means[lab] <- mean(img, mask=(labelImg==labels[lab]))
+    means[lab] <- mean(as.array(img)[which(as.array(labelImg)==labels[lab])])
   }
   return(means)
 }
@@ -71,7 +73,13 @@ if ( verbose ) {
 
 thickness <- antsImageRead(thicknessName,dim)
 voxVol <- prod(antsGetSpacing(thickness))
-thickMean <- mean(thickness, mask=(brainSeg==2))
+print("Read thickness image")
+print( length(which(as.array(brainSeg)==2)))
+
+#thickMean <- mean(thickness, mask=(as.array(brainSeg)==2))
+thickMean <- meanByLabel(thickness, brainSeg, c(2))[1]
+print("Got thickmean" )
+
 if (verbose) {
   print( paste("GM mean thickness", thickMean))
 }
@@ -183,6 +191,8 @@ if ( !is.na(DTI) ) {
 
 # Examine BOLD data
 
+returnData = data.frame(CerebrumVolume=brainvol, CSFVolume=csfVol, GMVolume=gmVol, WMVolume=wmVol, DeepGrayVolume=deepVol, BrainStemVolume=stemVol, CerebellumVolume=cerbVol, GMMeanThickness=thickMean )
 
+return( returnData )
 
 }
